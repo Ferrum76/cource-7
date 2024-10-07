@@ -15,20 +15,20 @@ class TaskTestCase(APITestCase):
         self.user = User.objects.create(email='test@test.ru')
         self.user2 = User.objects.create(email='test2@test.ru')
         self.task = Task.objects.create(action='Test action',
-                                          place='Test place',
-                                          time='19:00',
-                                          pleasant_task=False,
-                                          award='Test reward',
-                                          is_public=True,
-                                          duration=timedelta(minutes=1),
-                                          owner=self.user)
+                                        place='Test place',
+                                        time='19:00',
+                                        pleasant_task=False,
+                                        award='Test reward',
+                                        is_public=True,
+                                        duration=timedelta(minutes=1),
+                                        owner=self.user)
         self.nice_task = Task.objects.create(action='Test enjoyable action',
-                                               place='Test enjoyable place',
-                                               time='19:00',
-                                               pleasant_task=True,
-                                               is_public=True,
-                                               duration=timedelta(minutes=1),
-                                               owner=self.user)
+                                             place='Test enjoyable place',
+                                             time='19:00',
+                                             pleasant_task=True,
+                                             is_public=True,
+                                             duration=timedelta(minutes=1),
+                                             owner=self.user)
 
     def test_task_list_public(self):
         """Тест вывода списка публичных привычек"""
@@ -142,7 +142,7 @@ class TaskTestCase(APITestCase):
         response = self.client.post(url, data_incorrect)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertEqual(response.json(), {'duration': ['Ensure this value is less than or equal to 0:02:00.'],})
+        self.assertEqual(response.json(), {'duration': ['Ensure this value is less than or equal to 0:02:00.'], })
 
         data_enjoyable_incorrect = {
             'place': 'Test place 2',

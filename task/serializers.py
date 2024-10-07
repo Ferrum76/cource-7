@@ -6,6 +6,7 @@ from task.validators import RewardValidator, RelatedTaskValidator
 
 class TaskSerializer(serializers.ModelSerializer):
     """Сериализотор модели привычки"""
+
     class Meta:
         model = Task
         fields = '__all__'

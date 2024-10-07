@@ -1,13 +1,12 @@
 import json
+from datetime import datetime as dt
 
 import requests
-from datetime import datetime as dt
 from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask, CrontabSchedule
 from django_celery_beat.utils import make_aware
 
 from config.settings import TELEGRAM_API
-from task.models import Task
 
 
 def send_tg_message(message, chat_id):
@@ -21,17 +20,6 @@ def send_tg_message(message, chat_id):
         response.raise_for_status()
     except Exception as e:
         print(f"Произошла непредвиденная ошибка: {e}")
-
-
-def remind_of_task(task_id):
-    """
-    Напоминание о выполнении привычки
-    """
-    task = Task.objects.get(pk=task_id)
-    if task.user.chat_id:
-        message = f'''Привет!\nНе забудь сегодня выполнить привычку: "{task.action}" в {task.time.strftime("%H:%M")}\n
-        Место: {task.place}'''
-        send_tg_message(message, task.user.chat_id)
 
 
 def create_periodic_task(task):
