@@ -1,17 +1,53 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:latest
+    restart: on-failure
+    expose:
+      - "6379"
   db:
     image: postgres:latest
-    restart: unless-stopped
+    restart: on-failure
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "-c", "pg_isready -U $POSTGRES_USER" ]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+    env_file:
+      - .env
+    expose:
+      - "5432"
+
+  celery:
+    build: .
+    tty: true
+    command: celery -A config worker -l INFO
+    restart: on-failure
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+      - app
+    env_file:
+      - .env
+  celery-beat:
+    build: .
+    tty: true
+    command: celery -A config beat -l INFO
+    restart: on-failure
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+      - app
+    env_file:
+      - .env
+
 
     # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
