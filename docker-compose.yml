@@ -1,56 +1,85 @@
 version: '3.8'
 
 services:
-  redis:
-    image: redis:latest
-    restart: on-failure
-    expose:
-      - "6379"
-  db:
-    image: postgres:latest
-    restart: on-failure
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile.django
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "-c", "pg_isready -U $POSTGRES_USER" ]
-      interval: 10s
-      retries: 5
-      timeout: 5s
+      - ./app:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - db
+      - redis
     env_file:
-      - .env
-    expose:
-      - "5432"
+      - ./.env
+    restart: always
+    command: gunicorn --bind 0.0.0.0:8000 config.wsgi:application
+  
+  db:
+    image: postgres:14
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+
+  redis:
+    image: redis:7
+    restart: always
 
   celery:
-    build: .
-    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile.django
     command: celery -A config worker -l INFO
-    restart: on-failure
     volumes:
-      - .:/app
-    depends_on:
-      - redis
-      - db
-      - app
+      - ./app:/app
     env_file:
-      - .env
+      - ./.env
+    depends_on:
+      - db
+      - redis
+      - web
+
   celery-beat:
-    build: .
-    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile.django
     command: celery -A config beat -l INFO
-    restart: on-failure
     volumes:
-      - .:/app
-    depends_on:
-      - redis
-      - db
-      - app
+      - ./app:/app
     env_file:
-      - .env
+      - ./.env
+    depends_on:
+      - db
+      - redis
+      - web
 
-
-    # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+    restart: always
 
 volumes:
-  postgres-data:
+  postgres_data:
+  static_volume:
+  media_volume:
